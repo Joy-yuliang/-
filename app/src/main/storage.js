@@ -30,6 +30,7 @@ const DEFAULT_DATA = {
   systems: [],
   events: {},
   days: {},
+  logs: [],
 };
 
 function init() {
@@ -46,6 +47,7 @@ function init() {
     data.systems = Array.isArray(data.systems) ? data.systems : [];
     data.events = data.events || {};
     data.days = data.days || {};
+    data.logs = Array.isArray(data.logs) ? data.logs : [];
   } catch {
     data = structuredClone(DEFAULT_DATA);
     save();

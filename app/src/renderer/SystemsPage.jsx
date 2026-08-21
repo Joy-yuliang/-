@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { uid } from './utils.js';
+import ExpandableTextarea from './ExpandableTextarea.jsx';
+import { LogContext } from './App.jsx';
+import { truncate } from './logService.js';
 
 marked.setOptions({ breaks: true, gfm: true });
 
@@ -13,10 +16,11 @@ function wc(text) {
   return (text || '').replace(/\s/g, '').length;
 }
 
-function fmtTime(iso) {
+// 时间显示：具体到分钟（HH:mm），按本机时区
+function fmtHM(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 const LEVEL_NAMES = ['一级', '二级', '三级', '四级', '五级', '六级', '七级', '八级', '九级', '十级', '十一级', '十二级', '十三级', '十四级', '十五级', '十六级'];
@@ -120,6 +124,7 @@ export default function SystemsPage({ data, update, jump, onJumpDismiss, searchO
 }
 
 function MemoView({ nodes, addNode, updateNode, deleteNode, moveNode, forcedOpen }) {
+  const log = useContext(LogContext);
   const [addingRoot, setAddingRoot] = useState(false);
   const roots = nodes.filter((n) => !n.parentId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
@@ -135,6 +140,7 @@ function MemoView({ nodes, addNode, updateNode, deleteNode, moveNode, forcedOpen
         <AddBox
           onSave={(title, content) => {
             addNode(null, title, content);
+            log('system', '您新增了一级体系：' + truncate(title));
             setAddingRoot(false);
           }}
           onCancel={() => setAddingRoot(false)}
@@ -149,6 +155,7 @@ function MemoView({ nodes, addNode, updateNode, deleteNode, moveNode, forcedOpen
 }
 
 function NodeCard({ node, nodes, addNode, updateNode, deleteNode, moveNode, depth, forcedOpen }) {
+  const log = useContext(LogContext);
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -177,13 +184,21 @@ function NodeCard({ node, nodes, addNode, updateNode, deleteNode, moveNode, dept
         <button className="chevron">{expanded ? '▾' : '▸'}</button>
         <span className="leveltag">{levelName(depth)}</span>
         <span className="nodetitle">{node.title || '（未命名）'}</span>
-        <span className="nodemeta">{wc(node.content)} 字 · 更新于 {fmtTime(node.updatedAt)}</span>
+        <span className="nodemeta">{wc(node.content)} 字 · 创建 {fmtHM(node.createdAt)} · 更新 {fmtHM(node.updatedAt)}</span>
         {children.length > 0 && <span className="nodemeta">{children.length} 个子体系</span>}
         <div className="nodebtns" onClick={(e) => e.stopPropagation()}>
           {confirmDel ? (
             <span className="delconfirm">
               确认删除（含全部子体系）？
-              <button className="minibtn danger" onClick={() => deleteNode(node.id)}>确定</button>
+              <button
+                className="minibtn danger"
+                onClick={() => {
+                  deleteNode(node.id);
+                  log('system', '您删除了体系：' + truncate(node.title));
+                }}
+              >
+                确定
+              </button>
               <button className="minibtn" onClick={() => setConfirmDel(false)}>取消</button>
             </span>
           ) : (
@@ -202,6 +217,7 @@ function NodeCard({ node, nodes, addNode, updateNode, deleteNode, moveNode, dept
               initialContent={node.content}
               onSave={(title, content) => {
                 updateNode(node.id, { title, content });
+                log('system', '您编辑了体系：' + truncate(title));
                 setEditing(false);
               }}
               onCancel={() => setEditing(false)}
@@ -217,6 +233,7 @@ function NodeCard({ node, nodes, addNode, updateNode, deleteNode, moveNode, dept
                 value={node.parentId || ''}
                 onChange={(e) => {
                   moveNode(node.id, e.target.value || null);
+                  log('system', '您移动了体系：' + truncate(node.title));
                   setMoving(false);
                 }}
               >
@@ -234,6 +251,7 @@ function NodeCard({ node, nodes, addNode, updateNode, deleteNode, moveNode, dept
             <AddBox
               onSave={(title, content) => {
                 addNode(node.id, title, content);
+                log('system', '您新增了子体系：' + truncate(title));
                 setAdding(false);
               }}
               onCancel={() => setAdding(false)}
@@ -272,11 +290,11 @@ function AddBox({ initialTitle = '', initialContent = '', onSave, onCancel }) {
       {preview ? (
         <div className="mdbody addbox-preview" dangerouslySetInnerHTML={{ __html: md(content) || '<span class="placeholder">（暂无内容）</span>' }} />
       ) : (
-        <textarea
-          className="addbox-content"
-          placeholder={'支持 Markdown：\n# 标题\n- 列表\n**加粗**\n\n写下这个体系的内容、方法、规划…'}
+        <ExpandableTextarea
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={setContent}
+          placeholder={'支持 Markdown：\n# 标题\n- 列表\n**加粗**\n\n写下这个体系的内容、方法、规划…'}
+          minHeight={320}
         />
       )}
       <div className="addbox-actions">
@@ -312,7 +330,7 @@ function TreeView({ nodes, onBack }) {
           <div className="treepanelbody">
             <div className="treepanelhead">
               <h2>{sel.title || '（未命名）'}</h2>
-              <span className="nodemeta">{wc(sel.content)} 字 · 更新于 {fmtTime(sel.updatedAt)}</span>
+              <span className="nodemeta">{wc(sel.content)} 字 · 创建 {fmtHM(sel.createdAt)} · 更新 {fmtHM(sel.updatedAt)}</span>
             </div>
             <div className="mdbody" dangerouslySetInnerHTML={{ __html: md(sel.content) || '<span class="placeholder">（暂无内容）</span>' }} />
           </div>

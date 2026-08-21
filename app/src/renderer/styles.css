@@ -1608,3 +1608,171 @@ body {
   gap: 6px;
   margin-left: 12px;
 }
+
+/* ===== 全局：禁止横向滚动，长文本自动换行 ===== */
+html,
+body {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-wrap: break-word;
+}
+
+.pagewrap {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.daily,
+.diary,
+.systems,
+.settings,
+.logs,
+.treeview,
+.eventsbody,
+.cols {
+  min-width: 0;
+}
+
+.text,
+.nodetitle,
+.treenode-label,
+.evname,
+.evloc,
+.evnote,
+.evtime,
+.logmsg,
+.toast,
+.searchsub,
+.addbox-title {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ===== Toast 提示（顶部居中，垂直堆叠，2 秒淡出） ===== */
+.toasthost {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  background: #1f2937;
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  max-width: 72vw;
+  animation: toastin 0.3s ease;
+}
+
+.toast.leaving {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes toastin {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== 操作日志页 ===== */
+.logs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  max-width: 980px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.logshead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.logshead h1 {
+  font-size: 22px;
+}
+
+.logslist {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: calc(100vh - 180px);
+  padding-right: 4px;
+}
+
+.logyear {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 20px 0 4px;
+}
+
+.logdate {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 10px 0 4px;
+}
+
+.logrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 2px;
+  border-bottom: 1px dashed var(--border);
+  font-size: 13px;
+}
+
+.logtime {
+  color: var(--muted);
+  font-size: 12px;
+  flex: none;
+  width: 44px;
+  padding-top: 1px;
+}
+
+.logtag {
+  flex: none;
+  font-size: 10px;
+  line-height: 16px;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 5px;
+  padding: 0 6px;
+  margin-top: 1px;
+}
+
+.logtag.diary {
+  background: #059669;
+}
+
+.logtag.system {
+  background: var(--amber);
+}
+
+.logmsg {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+

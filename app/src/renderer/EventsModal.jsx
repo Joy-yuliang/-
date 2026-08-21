@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { uid } from './utils.js';
 import { dayLabel } from './calendar.js';
+import { LogContext } from './App.jsx';
+import { truncate } from './logService.js';
 
 const WEEK = ['一', '二', '三', '四', '五', '六', '日'];
 
@@ -51,6 +53,7 @@ function EventForm({ onSave, onCancel }) {
 
 // 大日历弹窗：翻月翻年、添加日程、红色「有日」标记、点击查看当天日程
 export default function EventsModal({ data, update, onClose }) {
+  const log = useContext(LogContext);
   const events = data.events || {};
   const [ym, setYm] = useState(() => {
     const d = new Date();
@@ -86,19 +89,24 @@ export default function EventsModal({ data, update, onClose }) {
 
   const dayEvents = sel ? events[sel] || [] : [];
 
-  const addEvent = (ev) =>
+  const addEvent = (ev) => {
+    log('plan', '您添加了日程：' + truncate(ev.name));
     update((d) => {
       const evs = { ...(d.events || {}) };
       evs[sel] = [...(evs[sel] || []), { id: uid(), ...ev }];
       return { ...d, events: evs };
     });
+  };
 
-  const removeEvent = (id) =>
+  const removeEvent = (id) => {
+    const ev = dayEvents.find((e) => e.id === id);
+    log('plan', '您删除了日程：' + truncate(ev ? ev.name : ''));
     update((d) => {
       const evs = { ...(d.events || {}) };
       evs[sel] = (evs[sel] || []).filter((e) => e.id !== id);
       return { ...d, events: evs };
     });
+  };
 
   return (
     <div className="modalback" onClick={onClose}>

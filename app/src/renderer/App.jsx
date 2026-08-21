@@ -1,10 +1,17 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import DailyPage from './DailyPage.jsx';
 import DiaryPage from './DiaryPage.jsx';
 import SystemsPage from './SystemsPage.jsx';
 import SettingsPage from './SettingsPage.jsx';
+import LogsPage from './LogsPage.jsx';
 import SearchPanel from './SearchPanel.jsx';
+import ToastHost from './ToastHost.jsx';
 import { runSearch } from './search.js';
+import { makeLog } from './logService.js';
+import { uid } from './utils.js';
+
+// 日志上下文：log(category, message) 同时写入 data.logs 并弹出 Toast
+export const LogContext = createContext(() => {});
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -13,6 +20,7 @@ export default function App() {
   const [searchQ, setSearchQ] = useState('');
   const [jump, setJump] = useState(null); // { id, target }
   const [lastJump, setLastJump] = useState(null); // 最近点过的结果 target
+  const [toasts, setToasts] = useState([]);
   const timer = useRef(null);
 
   useEffect(() => {
@@ -25,6 +33,24 @@ export default function App() {
       if (!prev) return prev;
       return fn(structuredClone(prev));
     });
+  }, []);
+
+  const showToast = useCallback((msg) => {
+    const id = uid();
+    setToasts((t) => [...t, { id, msg }]);
+  }, []);
+
+  // 记录操作日志 + 弹 Toast（消息即日志内容）
+  const log = useCallback(
+    (category, message) => {
+      setData((prev) => (prev ? { ...prev, logs: [...(prev.logs || []), makeLog(category, message)] } : prev));
+      showToast(message);
+    },
+    [showToast]
+  );
+
+  const dismissToast = useCallback((id) => {
+    setToasts((t) => t.filter((x) => x.id !== id));
   }, []);
 
   const results = useMemo(() => runSearch(data || { days: {}, systems: [] }, searchQ), [data, searchQ]);
@@ -69,6 +95,8 @@ export default function App() {
         <button className={tab === 'diary' ? 'navbtn active' : 'navbtn'} onClick={() => setTab('diary')}>日记</button>
         <button className={tab === 'systems' ? 'navbtn active' : 'navbtn'} onClick={() => setTab('systems')}>体系</button>
         <button className={tab === 'settings' ? 'navbtn active' : 'navbtn'} onClick={() => setTab('settings')}>设置</button>
+        <button className={tab === 'logs' ? 'navbtn active' : 'navbtn'} onClick={() => setTab('logs')}>日志</button>
+        <div className="navright">纯本地 · 数据在本机</div>
         <button
           className={searchOpen ? 'searchbtn active' : 'searchbtn'}
           onClick={() => setSearchOpen(!searchOpen)}
@@ -76,25 +104,31 @@ export default function App() {
         >
           🔍
         </button>
-        <div className="navright">纯本地 · 数据在本机</div>
       </nav>
 
       {searchOpen && (
         <SearchPanel q={searchQ} results={results} onQChange={setSearchQ} onPick={handlePick} onClose={() => setSearchOpen(false)} />
       )}
 
-      <div className={'pagewrap' + (tab === 'daily' ? '' : ' hidden')}>
-        <DailyPage data={data} update={update} jump={jump} onJumpDismiss={dismissJump} searchOpen={searchOpen} />
-      </div>
-      <div className={'pagewrap' + (tab === 'diary' ? '' : ' hidden')}>
-        <DiaryPage data={data} update={update} jump={jump} onJumpDismiss={dismissJump} searchOpen={searchOpen} />
-      </div>
-      <div className={'pagewrap' + (tab === 'systems' ? '' : ' hidden')}>
-        <SystemsPage data={data} update={update} jump={jump} onJumpDismiss={dismissJump} searchOpen={searchOpen} />
-      </div>
-      <div className={'pagewrap' + (tab === 'settings' ? '' : ' hidden')}>
-        <SettingsPage data={data} update={update} />
-      </div>
+      <LogContext.Provider value={log}>
+        <div className={'pagewrap' + (tab === 'daily' ? '' : ' hidden')}>
+          <DailyPage data={data} update={update} jump={jump} onJumpDismiss={dismissJump} searchOpen={searchOpen} />
+        </div>
+        <div className={'pagewrap' + (tab === 'diary' ? '' : ' hidden')}>
+          <DiaryPage data={data} update={update} jump={jump} onJumpDismiss={dismissJump} searchOpen={searchOpen} />
+        </div>
+        <div className={'pagewrap' + (tab === 'systems' ? '' : ' hidden')}>
+          <SystemsPage data={data} update={update} jump={jump} onJumpDismiss={dismissJump} searchOpen={searchOpen} />
+        </div>
+        <div className={'pagewrap' + (tab === 'settings' ? '' : ' hidden')}>
+          <SettingsPage data={data} update={update} />
+        </div>
+        <div className={'pagewrap' + (tab === 'logs' ? '' : ' hidden')}>
+          <LogsPage data={data} />
+        </div>
+      </LogContext.Provider>
+
+      <ToastHost toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

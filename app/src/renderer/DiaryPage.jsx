@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { todayStr, defaultDay } from './utils.js';
 import { weekdayOf, dayExtra } from './calendar.js';
 import CalendarPicker from './CalendarPicker.jsx';
 import ExpandableTextarea from './ExpandableTextarea.jsx';
+import BlurLogInput from './BlurLogInput.jsx';
+import { LogContext } from './App.jsx';
 
 function fmtCn(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -10,6 +12,7 @@ function fmtCn(dateStr) {
 }
 
 export default function DiaryPage({ data, update, jump, onJumpDismiss, searchOpen }) {
+  const log = useContext(LogContext);
   const today = todayStr();
   const [sel, setSel] = useState(today);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -55,6 +58,7 @@ export default function DiaryPage({ data, update, jump, onJumpDismiss, searchOpe
 
   const exportDiary = async () => {
     await window.api.exportDiary(sel);
+    log('diary', '您导出了日记');
   };
 
   const ex = dayExtra(sel);
@@ -80,11 +84,21 @@ export default function DiaryPage({ data, update, jump, onJumpDismiss, searchOpe
         <div className="diarymeta">
           <label>
             今日音乐
-            <input value={diary.music || ''} onChange={(e) => patchDiary({ music: e.target.value })} placeholder="手动填写" />
+            <BlurLogInput
+              value={diary.music || ''}
+              onValue={(v) => patchDiary({ music: v })}
+              onEdit={() => log('diary', '您修改了音乐')}
+              placeholder="手动填写"
+            />
           </label>
           <label>
             天气
-            <input value={diary.weather || ''} onChange={(e) => patchDiary({ weather: e.target.value })} placeholder="手动填写" />
+            <BlurLogInput
+              value={diary.weather || ''}
+              onValue={(v) => patchDiary({ weather: v })}
+              onEdit={() => log('diary', '您修改了天气')}
+              placeholder="手动填写"
+            />
           </label>
         </div>
       </div>
@@ -92,16 +106,16 @@ export default function DiaryPage({ data, update, jump, onJumpDismiss, searchOpe
       {/* 四个分区各自独立成卡片 */}
       <div className="diarysections">
         <section className="card dsec-card">
-          <DiarySection id="diary-sec-events" title="事件" value={diary.events} onChange={(v) => patchDiary({ events: v })} />
+          <DiarySection id="diary-sec-events" title="事件" value={diary.events} onChange={(v) => patchDiary({ events: v })} onEdit={() => log('diary', '您编辑了事件')} />
         </section>
         <section className="card dsec-card">
-          <DiarySection id="diary-sec-mood" title="情绪" value={diary.mood} onChange={(v) => patchDiary({ mood: v })} />
+          <DiarySection id="diary-sec-mood" title="情绪" value={diary.mood} onChange={(v) => patchDiary({ mood: v })} onEdit={() => log('diary', '您编辑了情绪')} />
         </section>
         <section className="card dsec-card">
-          <DiarySection id="diary-sec-thoughts" title="思考" value={diary.thoughts} onChange={(v) => patchDiary({ thoughts: v })} />
+          <DiarySection id="diary-sec-thoughts" title="思考" value={diary.thoughts} onChange={(v) => patchDiary({ thoughts: v })} onEdit={() => log('diary', '您编辑了思考')} />
         </section>
         <section className="card dsec-card">
-          <DiarySection id="diary-sec-essays" title="随笔" value={diary.essays} onChange={(v) => patchDiary({ essays: v })} />
+          <DiarySection id="diary-sec-essays" title="随笔" value={diary.essays} onChange={(v) => patchDiary({ essays: v })} onEdit={() => log('diary', '您编辑了随笔')} />
         </section>
       </div>
 
@@ -116,13 +130,13 @@ export default function DiaryPage({ data, update, jump, onJumpDismiss, searchOpe
   );
 }
 
-function DiarySection({ id, title, value, onChange }) {
+function DiarySection({ id, title, value, onChange, onEdit }) {
   return (
     <div className="dsec" id={id}>
       <div className="dsechead">
         <h3>{title}</h3>
       </div>
-      <ExpandableTextarea value={value} onChange={onChange} placeholder={`写${title}…`} minHeight={240} />
+      <ExpandableTextarea value={value} onChange={onChange} onEdit={onEdit} placeholder={`写${title}…`} minHeight={240} />
     </div>
   );
 }

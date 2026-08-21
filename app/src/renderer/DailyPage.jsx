@@ -1,10 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { todayStr, shiftDate, weekdayCn, uid, defaultDay } from './utils.js';
 import CalendarPicker from './CalendarPicker.jsx';
 import EventsModal from './EventsModal.jsx';
 import ExpandableTextarea from './ExpandableTextarea.jsx';
+import BlurLogInput from './BlurLogInput.jsx';
+import { LogContext } from './App.jsx';
+import { truncate } from './logService.js';
 
 export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpen }) {
+  const log = useContext(LogContext);
   const [date, setDate] = useState(todayStr());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
@@ -106,12 +110,13 @@ export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpe
 
   // ---- 临时起意 → 复制到明天安排（今天的记录保留，计划也是日记的一部分）----
   const copyToTomorrow = (colId, itemId) => {
+    const item = (day.lists[colId] || []).find((it) => it.id === itemId);
+    if (!item) return;
+    log('plan', '您复制到明天：' + truncate(item.text));
     const tomorrow = shiftDate(date, 1);
     update((d) => {
       const days = structuredClone(d.days);
       const cur = days[date] ? structuredClone(days[date]) : defaultDay();
-      const item = (cur.lists[colId] || []).find((it) => it.id === itemId);
-      if (!item) return d;
       const tmr = days[tomorrow] ? structuredClone(days[tomorrow]) : defaultDay();
       tmr.lists.arrange = [...(tmr.lists.arrange || []), { id: uid(), text: item.text, status: 'todo', reason: '' }];
       days[date] = cur;
@@ -135,6 +140,7 @@ export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpe
 
   const exportDay = async () => {
     await window.api.exportDay(date);
+    log('plan', '您导出了安排');
   };
 
   return (
@@ -171,7 +177,11 @@ export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpe
               <li key={r.id} className={status === 'done' ? 'item done' : status === 'missed' ? 'item missed' : 'item'}>
                 <button
                   className={status === 'done' ? 'check checked' : 'check'}
-                  onClick={() => setRoutine(r.id, status === 'done' ? 'todo' : 'done')}
+                  onClick={() => {
+                    const next = status === 'done' ? 'todo' : 'done';
+                    if (next === 'done') log('plan', '您完成了：' + truncate(r.name));
+                    setRoutine(r.id, next);
+                  }}
                   title="完成 / 取消"
                 >
                   {status === 'done' ? '✓' : ''}
@@ -179,7 +189,11 @@ export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpe
                 <span className="text">{r.name}</span>
                 <button
                   className={status === 'missed' ? 'missbtn active' : 'missbtn'}
-                  onClick={() => setRoutine(r.id, status === 'missed' ? 'todo' : 'missed')}
+                  onClick={() => {
+                    const next = status === 'missed' ? 'todo' : 'missed';
+                    if (next === 'missed') log('plan', '您标记了未完成：' + truncate(r.name));
+                    setRoutine(r.id, next);
+                  }}
                   title="标记未完成（记录原因，第二天纠正）"
                 >
                   ✗
@@ -205,6 +219,7 @@ export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpe
             {col.type === 'checklist' && (
               <ChecklistCol
                 colId={col.id}
+                colName={col.name}
                 items={day.lists[col.id] || []}
                 onAdd={addItem}
                 onSet={setItem}
@@ -222,6 +237,7 @@ export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpe
                 id="field-summary"
                 value={day.summary || ''}
                 onChange={setSummary}
+                onEdit={() => log('plan', '您编辑了总结')}
                 placeholder="写日记、写感悟、做总结反思…（SOP 第 6 步）"
                 minHeight={180}
               />
@@ -236,6 +252,7 @@ export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpe
           id="field-tomorrow"
           value={day.tomorrow || ''}
           onChange={setTomorrow}
+          onEdit={() => log('plan', '您编辑了次日计划')}
           placeholder="明天的安排、要读的书、要纠正的未完成项…"
           minHeight={160}
         />
@@ -247,7 +264,8 @@ export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpe
   );
 }
 
-function ChecklistCol({ colId, items, onAdd, onSet, onRemove, onCopyTomorrow }) {
+function ChecklistCol({ colId, colName, items, onAdd, onSet, onRemove, onCopyTomorrow }) {
+  const log = useContext(LogContext);
   const [text, setText] = useState('');
   const [editId, setEditId] = useState(null);
   const [draft, setDraft] = useState('');
@@ -256,6 +274,7 @@ function ChecklistCol({ colId, items, onAdd, onSet, onRemove, onCopyTomorrow }) 
   const submit = () => {
     const t = text.trim();
     if (!t) return;
+    log('plan', `您添加了${colName}：${truncate(t)}`);
     onAdd(colId, t);
     setText('');
   };
@@ -267,7 +286,10 @@ function ChecklistCol({ colId, items, onAdd, onSet, onRemove, onCopyTomorrow }) 
 
   const commitEdit = (it) => {
     const t = draft.trim();
-    if (t && t !== it.text) onSet(colId, it.id, { text: t });
+    if (t && t !== it.text) {
+      log('plan', `您编辑了${colName}：${truncate(t)}`);
+      onSet(colId, it.id, { text: t });
+    }
     setEditId(null);
   };
 
@@ -278,7 +300,11 @@ function ChecklistCol({ colId, items, onAdd, onSet, onRemove, onCopyTomorrow }) 
           <li key={it.id} id={'item-' + it.id} className={it.status === 'done' ? 'item done' : it.status === 'missed' ? 'item missed' : 'item'}>
             <button
               className={it.status === 'done' ? 'check checked' : 'check'}
-              onClick={() => onSet(colId, it.id, { status: it.status === 'done' ? 'todo' : 'done' })}
+              onClick={() => {
+                const next = it.status === 'done' ? 'todo' : 'done';
+                if (next === 'done') log('plan', '您完成了：' + truncate(it.text));
+                onSet(colId, it.id, { status: next });
+              }}
             >
               {it.status === 'done' ? '✓' : ''}
             </button>
@@ -301,7 +327,11 @@ function ChecklistCol({ colId, items, onAdd, onSet, onRemove, onCopyTomorrow }) 
             )}
             <button
               className={it.status === 'missed' ? 'missbtn active' : 'missbtn'}
-              onClick={() => onSet(colId, it.id, { status: it.status === 'missed' ? 'todo' : 'missed' })}
+              onClick={() => {
+                const next = it.status === 'missed' ? 'todo' : 'missed';
+                if (next === 'missed') log('plan', '您标记了未完成：' + truncate(it.text));
+                onSet(colId, it.id, { status: next });
+              }}
               title="标记未完成"
             >
               ✗
@@ -309,7 +339,16 @@ function ChecklistCol({ colId, items, onAdd, onSet, onRemove, onCopyTomorrow }) 
             {onCopyTomorrow && (
               <button className="tomorrowbtn" onClick={() => onCopyTomorrow(colId, it.id)} title="复制到明天的安排（今天的记录保留）">复制→明天</button>
             )}
-            <button className="delbtn" onClick={() => onRemove(colId, it.id)} title="删除">🗑</button>
+            <button
+              className="delbtn"
+              onClick={() => {
+                log('plan', `您删除了${colName}：${truncate(it.text)}`);
+                onRemove(colId, it.id);
+              }}
+              title="删除"
+            >
+              🗑
+            </button>
             {it.status === 'missed' && (
               <input
                 className="reason"
@@ -337,18 +376,55 @@ function ChecklistCol({ colId, items, onAdd, onSet, onRemove, onCopyTomorrow }) 
 }
 
 function ReadingCol({ reading, onAdd, onPatch, onRemove }) {
+  const log = useContext(LogContext);
   return (
     <div className="colwrap">
       {reading.map((r) => (
         <div key={r.id} className="readingrow">
-          <input className="read-content" placeholder="读了什么（书名 / 文章 + 内容）" value={r.content} onChange={(e) => onPatch(r.id, { content: e.target.value })} />
-          <input className="read-feel" placeholder="感受" value={r.feeling} onChange={(e) => onPatch(r.id, { feeling: e.target.value })} />
-          <input className="read-min" placeholder="分钟" type="number" min="0" value={r.minutes} onChange={(e) => onPatch(r.id, { minutes: e.target.value })} />
-          <button className="delbtn" onClick={() => onRemove(r.id)} title="删除">🗑</button>
+          <BlurLogInput
+            className="read-content"
+            placeholder="读了什么（书名 / 文章 + 内容）"
+            value={r.content}
+            onValue={(v) => onPatch(r.id, { content: v })}
+            onEdit={() => log('plan', '您编辑了读书')}
+          />
+          <BlurLogInput
+            className="read-feel"
+            placeholder="感受"
+            value={r.feeling}
+            onValue={(v) => onPatch(r.id, { feeling: v })}
+            onEdit={() => log('plan', '您编辑了读书')}
+          />
+          <BlurLogInput
+            className="read-min"
+            placeholder="分钟"
+            type="number"
+            min="0"
+            value={r.minutes}
+            onValue={(v) => onPatch(r.id, { minutes: v })}
+            onEdit={() => log('plan', '您编辑了读书')}
+          />          <button
+            className="delbtn"
+            onClick={() => {
+              log('plan', '您删除了读书');
+              onRemove(r.id);
+            }}
+            title="删除"
+          >
+            🗑
+          </button>
         </div>
       ))}
       {!reading.length && <div className="empty">读完写下来：内容 + 感受 + 时长（目标 ≥ 1 小时）</div>}
-      <button className="addbtn wide" onClick={onAdd}>+ 添加读书记录</button>
+      <button
+        className="addbtn wide"
+        onClick={() => {
+          log('plan', '您添加了读书');
+          onAdd();
+        }}
+      >
+        + 添加读书记录
+      </button>
     </div>
   );
 }
