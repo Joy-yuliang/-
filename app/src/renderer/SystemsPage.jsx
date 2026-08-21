@@ -124,7 +124,7 @@ export default function SystemsPage({ data, update, jump, onJumpDismiss, searchO
 }
 
 function MemoView({ nodes, addNode, updateNode, deleteNode, moveNode, forcedOpen }) {
-  const log = useContext(LogContext);
+  const { log } = useContext(LogContext);
   const [addingRoot, setAddingRoot] = useState(false);
   const roots = nodes.filter((n) => !n.parentId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
@@ -155,7 +155,7 @@ function MemoView({ nodes, addNode, updateNode, deleteNode, moveNode, forcedOpen
 }
 
 function NodeCard({ node, nodes, addNode, updateNode, deleteNode, moveNode, depth, forcedOpen }) {
-  const log = useContext(LogContext);
+  const { log } = useContext(LogContext);
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -307,6 +307,7 @@ function AddBox({ initialTitle = '', initialContent = '', onSave, onCancel }) {
 
 function TreeView({ nodes, onBack }) {
   const [selId, setSelId] = useState(null);
+  const [allOpen, setAllOpen] = useState(false);
   const roots = nodes.filter((n) => !n.parentId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   const sel = nodes.find((n) => n.id === selId);
 
@@ -316,11 +317,14 @@ function TreeView({ nodes, onBack }) {
         <div className="treehead">
           <button className="ghostbtn" onClick={onBack}>‹ 返回便签</button>
           <span className="treecaption">体系 · 总体预览</span>
+          <button className="ghostbtn" onClick={() => setAllOpen(!allOpen)} title="递归展开 / 收起全部层级">
+            {allOpen ? '全部收起' : '全部展开'}
+          </button>
         </div>
         <div className="tree">
           <div className="treeroot">体系</div>
           {roots.map((n) => (
-            <TreeNode key={n.id} node={n} nodes={nodes} selId={selId} onSelect={setSelId} depth={0} />
+            <TreeNode key={n.id} node={n} nodes={nodes} selId={selId} onSelect={setSelId} depth={0} forceOpen={allOpen} />
           ))}
           {!nodes.length && <div className="empty">还没有体系节点</div>}
         </div>
@@ -342,19 +346,26 @@ function TreeView({ nodes, onBack }) {
   );
 }
 
-function TreeNode({ node, nodes, selId, onSelect, depth }) {
-  const [open, setOpen] = useState(false);
+function TreeNode({ node, nodes, selId, onSelect, depth, forceOpen }) {
+  // open 由 forceOpen（全部展开/收起）派生；手动点击用 manualOpen 覆盖；forceOpen 变化时回到跟随
+  const [manualOpen, setManualOpen] = useState(null);
+  const open = manualOpen !== null ? manualOpen : forceOpen;
+
+  useEffect(() => {
+    setManualOpen(null);
+  }, [forceOpen]);
+
   const children = nodes.filter((n) => n.parentId === node.id).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
   return (
     <div className="treenode">
       <div className="treenode-row" style={{ paddingLeft: depth * 18 + 4 }}>
-        <button className="chevron small" onClick={() => setOpen(!open)}>{open ? '▾' : '▸'}</button>
+        <button className="chevron small" onClick={() => setManualOpen(!open)}>{open ? '▾' : '▸'}</button>
         <button
           className={selId === node.id ? 'treenode-label sel' : 'treenode-label'}
           onClick={() => {
             onSelect(node.id);
-            setOpen(!open);
+            setManualOpen(!open);
           }}
         >
           {node.title || '（未命名）'}
@@ -362,7 +373,7 @@ function TreeNode({ node, nodes, selId, onSelect, depth }) {
       </div>
       {open &&
         children.map((c) => (
-          <TreeNode key={c.id} node={c} nodes={nodes} selId={selId} onSelect={onSelect} depth={depth + 1} />
+          <TreeNode key={c.id} node={c} nodes={nodes} selId={selId} onSelect={onSelect} depth={depth + 1} forceOpen={forceOpen} />
         ))}
     </div>
   );

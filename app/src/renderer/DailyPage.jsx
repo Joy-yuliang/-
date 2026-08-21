@@ -8,7 +8,7 @@ import { LogContext } from './App.jsx';
 import { truncate } from './logService.js';
 
 export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpen }) {
-  const log = useContext(LogContext);
+  const { log } = useContext(LogContext);
   const [date, setDate] = useState(todayStr());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
@@ -265,7 +265,7 @@ export default function DailyPage({ data, update, jump, onJumpDismiss, searchOpe
 }
 
 function ChecklistCol({ colId, colName, items, onAdd, onSet, onRemove, onCopyTomorrow }) {
-  const log = useContext(LogContext);
+  const { log } = useContext(LogContext);
   const [text, setText] = useState('');
   const [editId, setEditId] = useState(null);
   const [draft, setDraft] = useState('');
@@ -376,7 +376,7 @@ function ChecklistCol({ colId, colName, items, onAdd, onSet, onRemove, onCopyTom
 }
 
 function ReadingCol({ reading, onAdd, onPatch, onRemove }) {
-  const log = useContext(LogContext);
+  const { log } = useContext(LogContext);
   return (
     <div className="colwrap">
       {reading.map((r) => (

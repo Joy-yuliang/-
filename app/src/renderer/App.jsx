@@ -10,8 +10,8 @@ import { runSearch } from './search.js';
 import { makeLog } from './logService.js';
 import { uid } from './utils.js';
 
-// 日志上下文：log(category, message) 同时写入 data.logs 并弹出 Toast
-export const LogContext = createContext(() => {});
+// 日志上下文：{ log(category, message) 写日志+Toast；toast(message) 仅 Toast（删除等不记日志的操作）}
+export const LogContext = createContext({ log: () => {}, toast: () => {} });
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -110,7 +110,7 @@ export default function App() {
         <SearchPanel q={searchQ} results={results} onQChange={setSearchQ} onPick={handlePick} onClose={() => setSearchOpen(false)} />
       )}
 
-      <LogContext.Provider value={log}>
+      <LogContext.Provider value={{ log, toast: showToast }}>
         <div className={'pagewrap' + (tab === 'daily' ? '' : ' hidden')}>
           <DailyPage data={data} update={update} jump={jump} onJumpDismiss={dismissJump} searchOpen={searchOpen} />
         </div>
@@ -124,7 +124,7 @@ export default function App() {
           <SettingsPage data={data} update={update} />
         </div>
         <div className={'pagewrap' + (tab === 'logs' ? '' : ' hidden')}>
-          <LogsPage data={data} />
+          <LogsPage data={data} update={update} />
         </div>
       </LogContext.Provider>
 

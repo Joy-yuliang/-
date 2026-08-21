@@ -1,7 +1,7 @@
 {
   "name": "personal-tixi",
   "productName": "个人体系",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "个人生活体系软件（计划 + 日记 + 体系 + 日程 + 全局搜索 + 操作日志）",
   "author": "Personal",
   "main": "src/main/index.js",

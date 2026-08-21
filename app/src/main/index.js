@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const storage = require('./storage');
 const reminders = require('./reminders');
-const { exportDay, exportDiary } = require('./export');
+const { exportDay, exportDiary, exportLogs } = require('./export');
 
 let mainWindow = null;
 
@@ -38,6 +38,7 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('export:day', (_e, dateStr) => exportDay(mainWindow, storage.get(), dateStr));
   ipcMain.handle('export:diary', (_e, dateStr) => exportDiary(mainWindow, storage.get(), dateStr));
+  ipcMain.handle('export:logs', () => exportLogs(mainWindow, storage.get()));
 
   createWindow();
   reminders.setup();

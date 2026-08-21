@@ -5,4 +5,5 @@ contextBridge.exposeInMainWorld('api', {
   setData: (data) => ipcRenderer.invoke('store:set', data),
   exportDay: (dateStr) => ipcRenderer.invoke('export:day', dateStr),
   exportDiary: (dateStr) => ipcRenderer.invoke('export:diary', dateStr),
+  exportLogs: () => ipcRenderer.invoke('export:logs'),
 });

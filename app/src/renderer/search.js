@@ -62,7 +62,7 @@ export function runSearch(data, q) {
       const fields = [
         ['events', '事件'],
         ['thoughts', '思考'],
-        ['mood', '情绪'],
+        ['mood', '感受'],
         ['essays', '随笔'],
         ['music', '今日音乐'],
         ['weather', '天气'],

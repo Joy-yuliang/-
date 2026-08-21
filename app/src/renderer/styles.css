@@ -1752,13 +1752,15 @@ body {
 
 .logtag {
   flex: none;
+  width: auto;
+  max-width: none;
   font-size: 10px;
   line-height: 16px;
   color: #fff;
   background: var(--accent);
   border-radius: 5px;
   padding: 0 6px;
-  margin-top: 1px;
+  margin: 1px 0 0 0;
 }
 
 .logtag.diary {
@@ -1774,5 +1776,142 @@ body {
   min-width: 0;
   color: var(--text);
   line-height: 1.6;
+}
+
+/* ===== 日志页 v0.9：标题行按钮 / 月份分组 / 删除 / 批量 ===== */
+.logshead {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logsheadbtns {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.logyearrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 0;
+}
+
+.logyearrow .logyear {
+  margin: 0;
+}
+
+.logmonthbtns {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: none;
+}
+
+.batchbtn,
+.logexportbtn,
+.loglatestbtn {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.batchbtn:hover,
+.logexportbtn:hover,
+.loglatestbtn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.loglatestbtn:disabled {
+  color: #c0c6cf;
+  border-color: var(--border);
+  background: #f5f6f7;
+  cursor: default;
+}
+
+.batchbtn.danger {
+  color: var(--danger);
+  border-color: #fecaca;
+}
+
+.batchbtn.danger:hover {
+  background: #fef2f2;
+}
+
+.logdel {
+  flex: none;
+  border: none;
+  background: transparent;
+  color: #c0c6cf;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  margin-left: 2px;
+}
+
+.logdel:hover {
+  color: var(--danger);
+}
+
+.logdelconfirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--danger);
+  flex: none;
+}
+
+.logcheck {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.logmsg.batchmode {
+  /* 批量模式下消息略淡，突出选择状态 */
+  color: var(--text);
+}
+
+.logrow.flashlatest {
+  animation: logflash 1.6s ease;
+}
+
+@keyframes logflash {
+  0%, 60% {
+    background: #fff7d6;
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* 日志删除确认框（批量） */
+.confirmmodal {
+  width: 440px;
+  height: auto;
+  max-height: none;
+  padding: 22px 24px;
+}
+
+.confirmmodal p {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 6px;
+}
+
+.confirmmodal .confirm-danger {
+  color: var(--danger);
+  font-weight: 600;
 }
 

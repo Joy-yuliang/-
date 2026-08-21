@@ -12,7 +12,7 @@ function fmtCn(dateStr) {
 }
 
 export default function DiaryPage({ data, update, jump, onJumpDismiss, searchOpen }) {
-  const log = useContext(LogContext);
+  const { log } = useContext(LogContext);
   const today = todayStr();
   const [sel, setSel] = useState(today);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -109,7 +109,7 @@ export default function DiaryPage({ data, update, jump, onJumpDismiss, searchOpe
           <DiarySection id="diary-sec-events" title="事件" value={diary.events} onChange={(v) => patchDiary({ events: v })} onEdit={() => log('diary', '您编辑了事件')} />
         </section>
         <section className="card dsec-card">
-          <DiarySection id="diary-sec-mood" title="情绪" value={diary.mood} onChange={(v) => patchDiary({ mood: v })} onEdit={() => log('diary', '您编辑了情绪')} />
+          <DiarySection id="diary-sec-mood" title="感受" value={diary.mood} onChange={(v) => patchDiary({ mood: v })} onEdit={() => log('diary', '您编辑了感受')} />
         </section>
         <section className="card dsec-card">
           <DiarySection id="diary-sec-thoughts" title="思考" value={diary.thoughts} onChange={(v) => patchDiary({ thoughts: v })} onEdit={() => log('diary', '您编辑了思考')} />

@@ -53,7 +53,7 @@ function EventForm({ onSave, onCancel }) {
 
 // 大日历弹窗：翻月翻年、添加日程、红色「有日」标记、点击查看当天日程
 export default function EventsModal({ data, update, onClose }) {
-  const log = useContext(LogContext);
+  const { log } = useContext(LogContext);
   const events = data.events || {};
   const [ym, setYm] = useState(() => {
     const d = new Date();
